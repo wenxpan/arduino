@@ -32,6 +32,7 @@ void setup(void)
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
+  
   Serial.println("Arduino_GFX Hello World example");
 
 #ifdef GFX_EXTRA_PRE_INIT

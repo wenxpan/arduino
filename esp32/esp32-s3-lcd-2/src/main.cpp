@@ -30,39 +30,27 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 void setup(void)
 {
   Serial.begin(115200);
-  // Serial.setDebugOutput(true);
-  // while(!Serial);
-  Serial.println("Arduino_GFX Hello World example");
+  USBSerial.begin(115200);
 
-#ifdef GFX_EXTRA_PRE_INIT
-  GFX_EXTRA_PRE_INIT();
-#endif
+  while(!Serial && !USBSerial);
+
+  USBSerial.println("This is USBSerial (CDC) output");
 
   // Init Display
   if (!gfx->begin())
   {
     Serial.println("gfx->begin() failed!");
   }
-  gfx->fillScreen(BLACK);
 
 #ifdef EXAMPLE_PIN_NUM_LCD_BL
   pinMode(EXAMPLE_PIN_NUM_LCD_BL, OUTPUT);
   digitalWrite(EXAMPLE_PIN_NUM_LCD_BL, HIGH);
 #endif
 
-  gfx->setCursor(10, 10);
-  gfx->setTextColor(RED);
-  gfx->println("Hello World!");
-
-  delay(5000); // 5 seconds
+  gfx->fillScreen(BLUE);
 }
 
 void loop()
 {
-  gfx->setCursor(random(gfx->width()), random(gfx->height()));
-  gfx->setTextColor(random(0xffff), random(0xffff));
-  gfx->setTextSize(random(6) /* x scale */, random(6) /* y scale */, random(2) /* pixel_margin */);
-  gfx->println("Hello World!");
-
   delay(1000); // 1 second
 }
