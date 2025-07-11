@@ -1,5 +1,8 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
+#include <secrets.h>
+#include <WiFi.h>
+#include <JPEGDEC.h>
 
 #define EXAMPLE_PIN_NUM_LCD_SCLK 39
 #define EXAMPLE_PIN_NUM_LCD_MOSI 38
@@ -27,6 +30,26 @@ Arduino_GFX *gfx = new Arduino_ST7789(
  * End of Arduino_GFX setting
  ******************************************************************************/
 
+// WiFi credentials
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASS;
+
+// Image URL to download
+const char* imageUrl = "https://picsum.photos/id/237/200/300.jpg";
+
+// JPEG decoder instance
+JPEGDEC jpeg;
+
+// Buffer for downloaded image
+uint8_t* jpegBuffer = nullptr;
+size_t jpegBufferSize = 0;
+
+// Function to draw the JPEG to the display
+int JPEGDraw(JPEGDRAW *pDraw) {
+  gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
+  return 1;
+}
+
 void setup(void)
 {
   Serial.begin(115200);
@@ -39,7 +62,7 @@ void setup(void)
   // Init Display
   if (!gfx->begin())
   {
-    Serial.println("gfx->begin() failed!");
+    USBSerial.println("gfx->begin() failed!");
   }
 
 #ifdef EXAMPLE_PIN_NUM_LCD_BL
@@ -47,10 +70,23 @@ void setup(void)
   digitalWrite(EXAMPLE_PIN_NUM_LCD_BL, HIGH);
 #endif
 
-  gfx->fillScreen(BLUE);
+  gfx->fillScreen(YELLOW);
+
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  WiFi.setSleep(false);
+  USBSerial.println("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    USBSerial.print(".");
+  }
+  USBSerial.println();
+  USBSerial.print("Connected with IP: ");
+  USBSerial.println(WiFi.localIP());
 }
 
 void loop()
 {
+  USBSerial.println(WiFi.localIP());
   delay(1000); // 1 second
 }
