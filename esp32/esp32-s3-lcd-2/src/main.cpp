@@ -1,46 +1,23 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
 #include "pepper.c"
+#include "gfx_setup.h"
 
-#define EXAMPLE_PIN_NUM_LCD_SCLK 39
-#define EXAMPLE_PIN_NUM_LCD_MOSI 38
-#define EXAMPLE_PIN_NUM_LCD_MISO 40
-#define EXAMPLE_PIN_NUM_LCD_DC 42
-#define EXAMPLE_PIN_NUM_LCD_RST -1
-#define EXAMPLE_PIN_NUM_LCD_CS 45
-#define EXAMPLE_PIN_NUM_LCD_BL 1
-
-#define EXAMPLE_LCD_ROTATION 1
-#define EXAMPLE_LCD_H_RES 240
-#define EXAMPLE_LCD_V_RES 320
-
-/* More data bus class: https://github.com/moononournation/Arduino_GFX/wiki/Data-Bus-Class */
-Arduino_DataBus *bus = new Arduino_ESP32SPI(
-    EXAMPLE_PIN_NUM_LCD_DC /* DC */, EXAMPLE_PIN_NUM_LCD_CS /* CS */,
-    EXAMPLE_PIN_NUM_LCD_SCLK /* SCK */, EXAMPLE_PIN_NUM_LCD_MOSI /* MOSI */, EXAMPLE_PIN_NUM_LCD_MISO /* MISO */);
-
-/* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
-Arduino_GFX *gfx = new Arduino_ST7789(
-    bus, EXAMPLE_PIN_NUM_LCD_RST /* RST */, EXAMPLE_LCD_ROTATION /* rotation */, true /* IPS */,
-    EXAMPLE_LCD_H_RES /* width */, EXAMPLE_LCD_V_RES /* height */);
-
-/*******************************************************************************
- * End of Arduino_GFX setting
- ******************************************************************************/
+Arduino_GFX *gfx = nullptr;
 
 void setup(void)
 {
-  Serial.begin(115200);
-  // Serial.setDebugOutput(true);
-  // while(!Serial);
-
-  Serial.println("Arduino_GFX Hello World example");
+  // Serial.begin(115200);
+  // Serial.println("Arduino_GFX Hello World example");
+  USBSerial.begin(115200);
+  USBSerial.println("USB Arduino_GFX Hello World example");
 
 #ifdef GFX_EXTRA_PRE_INIT
   GFX_EXTRA_PRE_INIT();
 #endif
 
   // Init Display
+  gfx = setup_gfx();
   if (!gfx->begin())
   {
     Serial.println("gfx->begin() failed!");
@@ -68,4 +45,5 @@ void loop()
   // gfx->println("Hello World!");
 
   delay(1000); // 1 second
+  Serial.println("Arduino_GFX Hello World example");
 }
