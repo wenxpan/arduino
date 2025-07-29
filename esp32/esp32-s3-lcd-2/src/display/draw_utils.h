@@ -5,6 +5,11 @@
 
 void draw_hello_world(Arduino_GFX *gfx, boolean clearScreen = false);
 
+/**
+ * @brief draw an example PROGMEM pepper image
+ */
+void draw_example_pepper(Arduino_GFX *gfx);
+
 /*******************************************************************************
  * PROGMEM Image Viewer
  *
