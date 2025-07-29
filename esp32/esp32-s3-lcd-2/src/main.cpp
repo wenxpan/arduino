@@ -3,6 +3,7 @@
 #include "pepper.c"
 #include "./display/gfx_setup.h"
 #include "./display/draw_utils.h"
+#include "./storage/sd_utils.h"
 
 Arduino_GFX *gfx = nullptr;
 
@@ -16,6 +17,9 @@ void setup(void)
 
   draw_map(gfx, (const uint16_t *)gimp_image.pixel_data,
            gimp_image.width, gimp_image.height);
+
+  sd_setup();
+  test_sd();
 }
 
 void loop()
