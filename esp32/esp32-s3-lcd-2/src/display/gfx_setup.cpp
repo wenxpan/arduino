@@ -13,5 +13,10 @@ Arduino_GFX *setup_gfx()
       bus, EXAMPLE_PIN_NUM_LCD_RST /* RST */, EXAMPLE_LCD_ROTATION /* rotation */,
       true /* IPS */, EXAMPLE_LCD_H_RES /* width */, EXAMPLE_LCD_V_RES /* height */);
 
+#ifdef EXAMPLE_PIN_NUM_LCD_BL
+  pinMode(EXAMPLE_PIN_NUM_LCD_BL, OUTPUT);
+  digitalWrite(EXAMPLE_PIN_NUM_LCD_BL, HIGH);
+#endif
+
   return gfx;
 }

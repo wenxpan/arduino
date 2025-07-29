@@ -14,7 +14,7 @@ Arduino_GFX *setup_gfx();
 #define EXAMPLE_PIN_NUM_LCD_CS 45
 #define EXAMPLE_PIN_NUM_LCD_BL 1
 
-#define EXAMPLE_LCD_ROTATION 1
+#define EXAMPLE_LCD_ROTATION 3
 #define EXAMPLE_LCD_H_RES 240
 #define EXAMPLE_LCD_V_RES 320
 
