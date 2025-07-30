@@ -1,5 +1,6 @@
 /*******************************************************************************
  * JPEGDEC related function
+ * From https://github.com/moononournation/Arduino_GFX/blob/master/examples/ImgViewer/ImgViewerJpeg/JpegFunc.h
  *
  * Dependent libraries:
  * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
@@ -8,6 +9,7 @@
 #define _JPEGFUNC_H_
 
 #include <JPEGDEC.h>
+#include <SD.h>
 
 static JPEGDEC _jpeg;
 static File _f;
@@ -15,24 +17,14 @@ static int _x, _y, _x_bound, _y_bound;
 
 static void *jpegOpenFile(const char *szFilename, int32_t *pFileSize)
 {
-    // Serial.println("jpegOpenFile");
-#if defined(ARDUINO_ARCH_SAMD) && defined(SEEED_GROVE_UI_WIRELESS)
-    _f = SD.open(szFilename, "r");
-#elif defined(TARGET_RP2040) || defined(PICO_RP2350)
-    _f = LittleFS.open(szFilename, "r");
-    // _f = SDFS.open(szFilename, "r");
-#elif defined(ESP32)
+    // USBSerial.println("jpegOpenFile");
+
     // _f = FFat.open(szFilename, "r");
-    _f = LittleFS.open(szFilename, "r");
+    // _f = LittleFS.open(szFilename, "r");
     // _f = SPIFFS.open(szFilename, "r");
-    // _f = SD.open(szFilename, "r");
+    _f = SD.open(szFilename, "r");
     // _f = SD_MMC.open(szFilename, "r");
-#elif defined(ESP8266)
-    _f = LittleFS.open(szFilename, "r");
-    // _f = SD.open(szFilename, "r");
-#else
-    _f = SD.open(szFilename, FILE_READ);
-#endif
+
     *pFileSize = _f.size();
     return &_f;
 }

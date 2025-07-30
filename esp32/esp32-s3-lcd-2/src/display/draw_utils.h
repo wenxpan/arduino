@@ -2,6 +2,7 @@
 #define DRAW_UTILS_H
 
 #include <Arduino_GFX_Library.h>
+#include <JPEGDEC.h>
 
 void drawHelloWorld(Arduino_GFX *gfx, boolean clearScreen = false);
 
@@ -25,5 +26,7 @@ void drawExamplePepper(Arduino_GFX *gfx);
  * imp_image.width, gimp_image.height);`
  ******************************************************************************/
 void drawBitmap(Arduino_GFX *gfx, const uint16_t *bitmap, int width, int height);
+
+void drawJpegFromSD(Arduino_GFX *gfx, const char *fileName, JPEG_DRAW_CALLBACK *jpegDrawCallback);
 
 #endif
