@@ -68,11 +68,11 @@ void setup(void)
   USBSerial.println("Starting");
 
   // Init Display
-  gfx = setup_gfx();
+  gfx = setupGfx();
 
-  draw_example_pepper(gfx);
+  drawExamplePepper(gfx);
 
-  // sd_setup();
+  // setupSD();
 
   // unsigned long start = millis();
   // jpegDraw(JPEG_FILENAME, jpegDrawCallback, true /* useBigEndian */,

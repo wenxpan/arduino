@@ -10,7 +10,7 @@ int cs = 41;
 
 uint64_t cardSize;
 
-void sd_setup()
+void setupSD()
 {
   USBSerial.println("SDSC");
 
@@ -47,7 +47,7 @@ void sd_setup()
   }
 }
 
-void list_dir(fs::FS &fs, const char *dirname, uint8_t levels)
+void listDir(fs::FS &fs, const char *dirname, uint8_t levels)
 {
   USBSerial.printf("Listing directory: %s\n", dirname);
 
@@ -72,7 +72,7 @@ void list_dir(fs::FS &fs, const char *dirname, uint8_t levels)
       USBSerial.println(file.name());
       if (levels)
       {
-        list_dir(fs, file.path(), levels - 1);
+        listDir(fs, file.path(), levels - 1);
       }
     }
     else
@@ -86,7 +86,7 @@ void list_dir(fs::FS &fs, const char *dirname, uint8_t levels)
   }
 }
 
-void create_dir(fs::FS &fs, const char *path)
+void createDir(fs::FS &fs, const char *path)
 {
   USBSerial.printf("Creating Dir: %s\n", path);
   if (fs.mkdir(path))
@@ -99,7 +99,7 @@ void create_dir(fs::FS &fs, const char *path)
   }
 }
 
-void remove_dir(fs::FS &fs, const char *path)
+void removeDir(fs::FS &fs, const char *path)
 {
   USBSerial.printf("Removing Dir: %s\n", path);
   if (fs.rmdir(path))
@@ -112,7 +112,7 @@ void remove_dir(fs::FS &fs, const char *path)
   }
 }
 
-void read_file(fs::FS &fs, const char *path)
+void readFile(fs::FS &fs, const char *path)
 {
   USBSerial.printf("Reading file: %s\n", path);
 
@@ -131,7 +131,7 @@ void read_file(fs::FS &fs, const char *path)
   file.close();
 }
 
-void write_file(fs::FS &fs, const char *path, const char *message)
+void writeFile(fs::FS &fs, const char *path, const char *message)
 {
   USBSerial.printf("Writing file: %s\n", path);
 
@@ -152,7 +152,7 @@ void write_file(fs::FS &fs, const char *path, const char *message)
   file.close();
 }
 
-void append_file(fs::FS &fs, const char *path, const char *message)
+void appendFile(fs::FS &fs, const char *path, const char *message)
 {
   USBSerial.printf("Appending to file: %s\n", path);
 
@@ -186,7 +186,7 @@ void renameFile(fs::FS &fs, const char *path1, const char *path2)
   }
 }
 
-void delete_file(fs::FS &fs, const char *path)
+void deleteFile(fs::FS &fs, const char *path)
 {
   USBSerial.printf("Deleting file: %s\n", path);
   if (fs.remove(path))
@@ -199,7 +199,7 @@ void delete_file(fs::FS &fs, const char *path)
   }
 }
 
-void test_file_io(fs::FS &fs, const char *path)
+void testFileIo(fs::FS &fs, const char *path)
 {
   File file = fs.open(path);
   static uint8_t buf[512];
@@ -248,30 +248,30 @@ void test_file_io(fs::FS &fs, const char *path)
   file.close();
 }
 
-void log_sd_info()
+void logSDInfo()
 {
   cardSize = SD.cardSize() / (1024 * 1024);
-  list_dir(SD, "/", 2);
+  listDir(SD, "/", 2);
   USBSerial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
   USBSerial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
   USBSerial.printf("SD Card Size: %lluMB\n", cardSize);
 }
 
-void test_sd()
+void testSD()
 {
-  list_dir(SD, "/", 0);
-  create_dir(SD, "/mydir");
-  list_dir(SD, "/", 0);
-  remove_dir(SD, "/mydir");
-  list_dir(SD, "/", 2);
+  listDir(SD, "/", 0);
+  createDir(SD, "/mydir");
+  listDir(SD, "/", 0);
+  removeDir(SD, "/mydir");
+  listDir(SD, "/", 2);
 
-  write_file(SD, "/hello.txt", "Hello ");
-  append_file(SD, "/hello.txt", "World!\n");
-  read_file(SD, "/hello.txt");
-  delete_file(SD, "/foo.txt");
+  writeFile(SD, "/hello.txt", "Hello ");
+  appendFile(SD, "/hello.txt", "World!\n");
+  readFile(SD, "/hello.txt");
+  deleteFile(SD, "/foo.txt");
   renameFile(SD, "/hello.txt", "/foo.txt");
-  read_file(SD, "/foo.txt");
-  test_file_io(SD, "/test.txt");
+  readFile(SD, "/foo.txt");
+  testFileIo(SD, "/test.txt");
 
-  log_sd_info();
+  logSDInfo();
 }

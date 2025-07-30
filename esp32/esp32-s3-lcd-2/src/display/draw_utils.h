@@ -3,12 +3,12 @@
 
 #include <Arduino_GFX_Library.h>
 
-void draw_hello_world(Arduino_GFX *gfx, boolean clearScreen = false);
+void drawHelloWorld(Arduino_GFX *gfx, boolean clearScreen = false);
 
 /**
  * @brief draw an example PROGMEM pepper image
  */
-void draw_example_pepper(Arduino_GFX *gfx);
+void drawExamplePepper(Arduino_GFX *gfx);
 
 /*******************************************************************************
  * PROGMEM Image Viewer
@@ -21,9 +21,9 @@ void draw_example_pepper(Arduino_GFX *gfx);
  * 5. Revise exported file just like "xxx.c"
  *
  * Example use:
- * `draw_map(gfx, (const uint16_t *)gimp_image.pixel_data,
+ * `drawBitmap(gfx, (const uint16_t *)gimp_image.pixel_data,
  * imp_image.width, gimp_image.height);`
  ******************************************************************************/
-void draw_map(Arduino_GFX *gfx, const uint16_t *bitmap, int width, int height);
+void drawBitmap(Arduino_GFX *gfx, const uint16_t *bitmap, int width, int height);
 
 #endif

@@ -8,56 +8,56 @@
 /**
  * @brief test whether sd card is working
  */
-void sd_setup();
+void setupSD();
 
 /**
- * `list_dir(SD, "/", 2);`
+ * `listDir(SD, "/", 2);`
  */
-void list_dir(fs::FS &fs, const char *dirname, uint8_t levels);
+void listDir(fs::FS &fs, const char *dirname, uint8_t levels);
 
 /**
- * `create_dir(SD, "/mydir");`
+ * `createDir(SD, "/mydir");`
  */
-void create_dir(fs::FS &fs, const char *path);
+void createDir(fs::FS &fs, const char *path);
 
 /**
- * `remove_dir(SD, "/mydir");`
+ * `removeDir(SD, "/mydir");`
  */
-void remove_dir(fs::FS &fs, const char *path);
+void removeDir(fs::FS &fs, const char *path);
 
 /**
- * `write_file(SD, "/hello.txt", "Hello ");`
+ * `writeFile(SD, "/hello.txt", "Hello ");`
  */
-void write_file(fs::FS &fs, const char *path, const char *message);
+void writeFile(fs::FS &fs, const char *path, const char *message);
 
 /**
- * `append_file(SD, "/hello.txt", "World!");`
+ * `appendFile(SD, "/hello.txt", "World!");`
  */
-void append_file(fs::FS &fs, const char *path, const char *message);
+void appendFile(fs::FS &fs, const char *path, const char *message);
 
 /**
- * `read_file(SD, "/hello.txt");`
+ * `readFile(SD, "/hello.txt");`
  */
-void read_file(fs::FS &fs, const char *path);
+void readFile(fs::FS &fs, const char *path);
 
 /**
- * `delete_file(SD, "/foo.txt");`
+ * `deleteFile(SD, "/foo.txt");`
  */
-void delete_file(fs::FS &fs, const char *path);
+void deleteFile(fs::FS &fs, const char *path);
 
 /**
- * `test_file_io(SD, "/test.txt");`
+ * `testFileIo(SD, "/test.txt");`
  */
-void test_file_io(fs::FS &fs, const char *path);
+void testFileIo(fs::FS &fs, const char *path);
 
 /**
  * @brief Log sd card type, size and paths
  */
-void log_sd_info();
+void logSDInfo();
 
 /**
  * @brief test adding/removing/listing files for sd card
  */
-void test_sd();
+void testSD();
 
 #endif

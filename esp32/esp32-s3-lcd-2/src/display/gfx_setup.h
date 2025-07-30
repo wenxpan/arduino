@@ -3,6 +3,6 @@
 
 #include <Arduino_GFX_Library.h>
 
-Arduino_GFX *setup_gfx();
+Arduino_GFX *setupGfx();
 
 #endif

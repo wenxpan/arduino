@@ -2,7 +2,7 @@
 #include "../config/config.h"
 
 /** Sets up Arduino GFX and returns gfx class */
-Arduino_GFX *setup_gfx()
+Arduino_GFX *setupGfx()
 {
   /* More data bus class: https://github.com/moononournation/Arduino_GFX/wiki/Data-Bus-Class */
   Arduino_DataBus *bus = new Arduino_ESP32SPI(
