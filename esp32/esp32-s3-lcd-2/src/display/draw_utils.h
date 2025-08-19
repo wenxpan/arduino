@@ -3,6 +3,7 @@
 
 #include <Arduino_GFX_Library.h>
 #include <JPEGDEC.h>
+#include "./GifClass.h"
 
 void drawHelloWorld(Arduino_GFX *gfx, boolean clearScreen = false);
 
@@ -28,5 +29,7 @@ void drawExamplePepper(Arduino_GFX *gfx);
 void drawBitmap(Arduino_GFX *gfx, const uint16_t *bitmap, int width, int height);
 
 void drawJpegFromSD(Arduino_GFX *gfx, const char *fileName, JPEG_DRAW_CALLBACK *jpegDrawCallback);
+
+void drawGifFromSD(Arduino_GFX *gfx, GifClass gifClass, const char *fileName);
 
 #endif
