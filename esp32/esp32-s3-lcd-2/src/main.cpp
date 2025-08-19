@@ -1,23 +1,34 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
-#include "./display/gfx_setup.h"
-#include "./display/draw_utils.h"
-#include "./storage/sd_utils.h"
-
+#include <WiFi.h>
 #include <JPEGDEC.h>
 #include <SD.h>
 #include <SD_MMC.h>
+
+#include "time.h"
+#include "./secrets.h"
+#include "./display/gfx_setup.h"
+#include "./display/draw_utils.h"
+#include "./storage/sd_utils.h"
 #include "./display/JpegFunc.h"
 #include "./display/GifClass.h"
 
-static GifClass gifClass;
 Arduino_GFX *gfx = nullptr;
+
+static GifClass gifClass;
+
+// rotate files config
 File root;
 String imageFiles[50]; // Array to hold image filenames
 int imageCount = 0;
 int currentImage = 0;
 unsigned long lastChangeTime = 0;
 const unsigned long rotationInterval = 5000; // 5 seconds
+
+// Time configuration
+const char *ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 60 * 60 * 10; // Adjust for your timezone
+const int daylightOffset_sec = 0;        // Adjust for daylight saving
 
 #define GIF_FILENAME "/rain.gif"
 
@@ -71,6 +82,14 @@ void setup(void)
   // drawExamplePepper(gfx);
   setupSD();
   logSDInfo();
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    USBSerial.print(".");
+  }
 
   // // Load list of JPEG images
   // loadImageList();

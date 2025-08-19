@@ -5,6 +5,15 @@
 #include "JpegFunc.h"
 #include "./GifClass.h"
 
+// Time display variables
+unsigned long lastTimeUpdate = 0;
+const unsigned long timeUpdateInterval = 30000; // Update time every second
+char timeStr[20];
+
+uint16_t *timeOverlayBuffer = nullptr;
+int overlayWidth = 0, overlayHeight = 0;
+int overlayX = 0, overlayY = 0;
+
 void drawHelloWorld(Arduino_GFX *gfx, boolean clearScreen)
 {
   if (!gfx)
@@ -50,6 +59,41 @@ void drawJpegFromSD(Arduino_GFX *gfx, const char *fileName, JPEG_DRAW_CALLBACK *
   USBSerial.printf("Time used: %lu ms\n", millis() - start);
 }
 
+void drawTimeOverlay(Arduino_GFX *gfx)
+{
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo))
+  {
+    USBSerial.println("Failed to obtain time");
+    return;
+  }
+
+  strftime(timeStr, sizeof(timeStr), "%H:%M", &timeinfo);
+  // strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
+
+  // Set text properties
+  gfx->setTextSize(6);
+  gfx->setTextColor(WHITE);
+
+  // Calculate text dimensions
+  int16_t x1, y1;
+  uint16_t w, h;
+  gfx->getTextBounds(timeStr, 0, 0, &x1, &y1, &w, &h);
+
+  // Position at bottom left corner with some padding
+  int x = 30;                     // 10px from left
+  int y = gfx->height() - h - 60; // 10px from bottom
+
+  // Draw semi-transparent background (50% opacity)
+  // uint16_t bgColor = 0x1082; // Dark gray in RGB565
+
+  // gfx->fillRect(x - 5, y - 2, w + 10, h + 4, bgColor);
+
+  // Draw the time text
+  gfx->setCursor(x, y + h - 2); // Adjust for proper vertical alignment
+  gfx->print(timeStr);
+}
+
 void drawGifFromSD(Arduino_GFX *gfx, GifClass gifClass, const char *fileName)
 {
   if (!SD.exists(fileName))
@@ -66,7 +110,6 @@ void drawGifFromSD(Arduino_GFX *gfx, GifClass gifClass, const char *fileName)
   }
   else
   {
-    // read GIF file header
     gd_GIF *gif = gifClass.gd_open_gif(&gifFile);
     if (!gif)
     {
@@ -88,6 +131,8 @@ void drawGifFromSD(Arduino_GFX *gfx, GifClass gifClass, const char *fileName)
         int32_t start_ms = millis(), t_delay = 0, delay_until;
         int32_t res = 1;
         int32_t duration = 0, remain = 0;
+        unsigned long lastFrameTime = millis();
+
         while (res > 0)
         {
           t_delay = gif->gce.delay * 10;
@@ -101,8 +146,20 @@ void drawGifFromSD(Arduino_GFX *gfx, GifClass gifClass, const char *fileName)
           {
             gfx->drawIndexedBitmap(x, y, buf, gif->palette->colors, gif->width, gif->height);
 
+            // Draw time overlay on top of the GIF
+            drawTimeOverlay(gfx);
+
             duration += t_delay;
             delay_until = start_ms + duration;
+
+            // Update time display periodically
+            if (millis() - lastTimeUpdate >= timeUpdateInterval)
+            {
+              lastTimeUpdate = millis();
+              // Redraw time to keep it updated
+              drawTimeOverlay(gfx);
+            }
+
             while (millis() < delay_until)
             {
               delay(1);
