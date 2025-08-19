@@ -8,7 +8,9 @@
 #include <SD.h>
 #include <SD_MMC.h>
 #include "./display/JpegFunc.h"
+#include "./display/GifClass.h"
 
+static GifClass gifClass;
 Arduino_GFX *gfx = nullptr;
 File root;
 String imageFiles[50]; // Array to hold image filenames
@@ -16,6 +18,8 @@ int imageCount = 0;
 int currentImage = 0;
 unsigned long lastChangeTime = 0;
 const unsigned long rotationInterval = 5000; // 5 seconds
+
+#define GIF_FILENAME "/rotating-earth.gif"
 
 // pixel drawing callback
 static int jpegDrawCallback(JPEGDRAW *pDraw)
@@ -68,42 +72,108 @@ void setup(void)
   setupSD();
   logSDInfo();
 
-  // drawJpegFromSD(gfx, JPEG_FILENAME, jpegDrawCallback);
+  // // Load list of JPEG images
+  // loadImageList();
 
-  // Load list of JPEG images
-  loadImageList();
-
-  // Display first image if available
-  if (imageCount > 0)
-  {
-    drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
-    lastChangeTime = millis();
-  }
-  else
-  {
-    USBSerial.println("No JPEG images found!");
-  }
+  // // Display first image if available
+  // if (imageCount > 0)
+  // {
+  //   drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
+  //   lastChangeTime = millis();
+  // }
+  // else
+  // {
+  //   USBSerial.println("No JPEG images found!");
+  // }
 }
 
 void loop()
 {
-  if (imageCount > 0)
+  // if (imageCount > 0)
+  // {
+  //   unsigned long currentTime = millis();
+
+  //   // Check if it's time to change image
+  //   if (currentTime - lastChangeTime >= rotationInterval)
+  //   {
+  //     lastChangeTime = currentTime;
+
+  //     // Move to next image
+  //     currentImage = (currentImage + 1) % imageCount;
+
+  //     // Display the image
+  //     USBSerial.println("Displaying: " + imageFiles[currentImage]);
+  //     drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
+  //   }
+  // }
+
+  // delay(1 * 1000);
+  File gifFile = SD.open(GIF_FILENAME, "r");
+  if (!gifFile || gifFile.isDirectory())
   {
-    unsigned long currentTime = millis();
-
-    // Check if it's time to change image
-    if (currentTime - lastChangeTime >= rotationInterval)
+    USBSerial.println(F("ERROR: open gifFile Failed!"));
+    gfx->println(F("ERROR: open gifFile Failed!"));
+  }
+  else
+  {
+    // read GIF file header
+    gd_GIF *gif = gifClass.gd_open_gif(&gifFile);
+    if (!gif)
     {
-      lastChangeTime = currentTime;
+      USBSerial.println(F("gd_open_gif() failed!"));
+    }
+    else
+    {
+      uint8_t *buf = (uint8_t *)malloc(gif->width * gif->height);
+      if (!buf)
+      {
+        USBSerial.println(F("buf malloc failed!"));
+      }
+      else
+      {
+        int16_t x = (gfx->width() - gif->width) / 2;
+        int16_t y = (gfx->height() - gif->height) / 2;
 
-      // Move to next image
-      currentImage = (currentImage + 1) % imageCount;
+        USBSerial.println(F("GIF video start"));
+        int32_t start_ms = millis(), t_delay = 0, delay_until;
+        int32_t res = 1;
+        int32_t duration = 0, remain = 0;
+        while (res > 0)
+        {
+          t_delay = gif->gce.delay * 10;
+          res = gifClass.gd_get_frame(gif, buf);
+          if (res < 0)
+          {
+            USBSerial.println(F("ERROR: gd_get_frame() failed!"));
+            break;
+          }
+          else if (res > 0)
+          {
+            gfx->drawIndexedBitmap(x, y, buf, gif->palette->colors, gif->width, gif->height);
 
-      // Display the image
-      USBSerial.println("Displaying: " + imageFiles[currentImage]);
-      drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
+            duration += t_delay;
+            delay_until = start_ms + duration;
+            while (millis() < delay_until)
+            {
+              delay(1);
+              remain++;
+            }
+          }
+        }
+        USBSerial.println(F("GIF video end"));
+        USBSerial.print(F("Actual duration: "));
+        USBSerial.print(millis() - start_ms);
+        USBSerial.print(F(", expected duration: "));
+        USBSerial.print(duration);
+        USBSerial.print(F(", remain: "));
+        USBSerial.print(remain);
+        USBSerial.print(F(" ("));
+        USBSerial.print(100.0 * remain / duration);
+        USBSerial.println(F("%)"));
+
+        gifClass.gd_close_gif(gif);
+        free(buf);
+      }
     }
   }
-
-  delay(1 * 1000);
 }
