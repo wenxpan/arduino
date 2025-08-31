@@ -7,7 +7,7 @@
 
 // Time display variables
 unsigned long lastTimeUpdate = 0;
-const unsigned long timeUpdateInterval = 30000; // Update time every second
+const unsigned long timeUpdateInterval = 30000;
 char timeStr[20];
 
 uint16_t *timeOverlayBuffer = nullptr;
@@ -69,7 +69,6 @@ void drawTimeOverlay(Arduino_GFX *gfx)
   }
 
   strftime(timeStr, sizeof(timeStr), "%H:%M", &timeinfo);
-  // strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
 
   // Set text properties
   gfx->setTextSize(6);
@@ -147,18 +146,18 @@ void drawGifFromSD(Arduino_GFX *gfx, GifClass gifClass, const char *fileName)
             gfx->drawIndexedBitmap(x, y, buf, gif->palette->colors, gif->width, gif->height);
 
             // Draw time overlay on top of the GIF
-            drawTimeOverlay(gfx);
+            // drawTimeOverlay(gfx);
 
             duration += t_delay;
             delay_until = start_ms + duration;
 
-            // Update time display periodically
-            if (millis() - lastTimeUpdate >= timeUpdateInterval)
-            {
-              lastTimeUpdate = millis();
-              // Redraw time to keep it updated
-              drawTimeOverlay(gfx);
-            }
+            // // Update time display periodically
+            // if (millis() - lastTimeUpdate >= timeUpdateInterval)
+            // {
+            //   lastTimeUpdate = millis();
+            //   // Redraw time to keep it updated
+            //   drawTimeOverlay(gfx);
+            // }
 
             while (millis() < delay_until)
             {

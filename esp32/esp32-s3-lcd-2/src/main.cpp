@@ -27,8 +27,8 @@ const unsigned long rotationInterval = 5000; // 5 seconds
 
 // Time configuration
 const char *ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 60 * 60 * 10; // Adjust for your timezone
-const int daylightOffset_sec = 0;        // Adjust for daylight saving
+const long gmtOffset_sec = 60 * 60 * 10;
+const int daylightOffset_sec = 0;
 
 #define GIF_FILENAME "/rain.gif"
 
@@ -51,7 +51,8 @@ void loadImageList()
     {
       String filename = file.name();
       // Filter hidden files
-      if ((filename.endsWith(".jpg") || filename.endsWith(".jpeg")) &&
+      // if ((filename.endsWith(".jpg") || filename.endsWith(".jpeg")) &&
+      if (filename.endsWith(".gif") &&
           !filename.startsWith("._") &&
           !filename.startsWith("."))
       {
@@ -84,49 +85,51 @@ void setup(void)
   logSDInfo();
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  while (WiFi.status() != WL_CONNECTED)
+  // WiFi.begin(WIFI_SSID, WIFI_PASS);
+  // while (WiFi.status() != WL_CONNECTED)
+  // {
+  //   delay(500);
+  //   USBSerial.print(".");
+  // }
+
+  // Load list of JPEG images
+  loadImageList();
+
+  // Display first image if available
+  if (imageCount > 0)
   {
-    delay(500);
-    USBSerial.print(".");
+    // drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
+    drawGifFromSD(gfx, gifClass, imageFiles[currentImage].c_str());
+    lastChangeTime = millis();
   }
-
-  // // Load list of JPEG images
-  // loadImageList();
-
-  // // Display first image if available
-  // if (imageCount > 0)
-  // {
-  //   drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
-  //   lastChangeTime = millis();
-  // }
-  // else
-  // {
-  //   USBSerial.println("No JPEG images found!");
-  // }
+  else
+  {
+    USBSerial.println("No JPEG images found!");
+  }
 }
 
 void loop()
 {
-  // if (imageCount > 0)
-  // {
-  //   unsigned long currentTime = millis();
+  if (imageCount > 0)
+  {
+    unsigned long currentTime = millis();
 
-  //   // Check if it's time to change image
-  //   if (currentTime - lastChangeTime >= rotationInterval)
-  //   {
-  //     lastChangeTime = currentTime;
+    // Check if it's time to change image
+    if (currentTime - lastChangeTime >= rotationInterval)
+    {
+      lastChangeTime = currentTime;
 
-  //     // Move to next image
-  //     currentImage = (currentImage + 1) % imageCount;
+      // Move to next image
+      currentImage = (currentImage + 1) % imageCount;
 
-  //     // Display the image
-  //     USBSerial.println("Displaying: " + imageFiles[currentImage]);
-  //     drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
-  //   }
-  // }
+      // Display the image
+      USBSerial.println("Displaying: " + imageFiles[currentImage]);
+      // drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
+      drawGifFromSD(gfx, gifClass, imageFiles[currentImage].c_str());
+    }
+  }
 
-  // delay(1 * 1000);
+  delay(1 * 1000);
 
-  drawGifFromSD(gfx, gifClass, GIF_FILENAME);
+  // drawGifFromSD(gfx, gifClass, GIF_FILENAME);
 }
