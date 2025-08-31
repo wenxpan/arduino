@@ -2,10 +2,11 @@
 #include <Arduino_GFX_Library.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <WiFiAP.h>
+#include <WebServer.h>
 #include <JPEGDEC.h>
 #include <SD.h>
 #include <SD_MMC.h>
+#include <ESPmDNS.h>
 
 #include "time.h"
 #include "./secrets.h"
@@ -15,7 +16,9 @@
 #include "./display/JpegFunc.h"
 #include "./display/GifClass.h"
 
-WiFiServer server(80);
+WebServer server(80);
+
+const int led = 13;
 
 Arduino_GFX *gfx = nullptr;
 
@@ -36,6 +39,28 @@ const int daylightOffset_sec = 0;
 
 #define GIF_RAIN "/rain.gif"
 #define GIF_MEMORIES "/memories.gif"
+
+void handleRoot()
+{
+  server.send(200, "text/plain", "hello from esp32!");
+}
+
+void handleNotFound()
+{
+  String message = "File Not Found\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+  for (uint8_t i = 0; i < server.args(); i++)
+  {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+  server.send(404, "text/plain", message);
+}
 
 // pixel drawing callback
 static int jpegDrawCallback(JPEGDRAW *pDraw)
@@ -79,21 +104,35 @@ void loadImageList()
 
 void setup(void)
 {
+  pinMode(led, OUTPUT);
+  digitalWrite(led, 0);
   USBSerial.begin(115200);
-  USBSerial.println("Starting");
-
-  if (!WiFi.softAP(ESP_SSID, ESP_PASS))
-  {
-    log_e("Soft AP creation failed.");
-    while (1)
-      ;
-  }
+  WiFi.softAP(ESP_SSID, ESP_PASS);
   IPAddress myIP = WiFi.softAPIP();
-  USBSerial.print("AP IP address: ");
-  USBSerial.println(myIP);
-  server.begin();
+  USBSerial.println("");
 
-  Serial.println("Server started");
+  if (MDNS.begin("esp32"))
+  {
+    Serial.println("MDNS responder started");
+  }
+
+  server.on("/", handleRoot);
+
+  server.on("/rain", []()
+            { drawGifFromSD(gfx, gifClass, GIF_RAIN);
+            server.send(200, "text/plain", "rain.gif"); });
+
+  server.on("/memories", []()
+            { drawGifFromSD(gfx, gifClass, GIF_MEMORIES);
+            server.send(200, "text/plain", "memories.gif"); });
+
+  server.on("/inline", []()
+            { server.send(200, "text/plain", "this works as well"); });
+
+  server.onNotFound(handleNotFound);
+
+  server.begin();
+  Serial.println("HTTP server started");
 
   // Init Display
   gfx = setupGfx();
@@ -128,64 +167,9 @@ void setup(void)
 
 void loop()
 {
-  WiFiClient client = server.available(); // listen for incoming clients
+  server.handleClient();
+  delay(2); // allow the cpu to switch to other tasks
 
-  if (client)
-  {                                // if you get a client,
-    Serial.println("New Client."); // print a message out the serial port
-    String currentLine = "";       // make a String to hold incoming data from the client
-    while (client.connected())
-    { // loop while the client's connected
-      if (client.available())
-      {                         // if there's bytes to read from the client,
-        char c = client.read(); // read a byte, then
-        Serial.write(c);        // print it out the serial monitor
-        if (c == '\n')
-        { // if the byte is a newline character
-
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
-          if (currentLine.length() == 0)
-          {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
-            client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/html");
-            client.println();
-
-            // the content of the HTTP response follows the header:
-            client.print("<a href=\"/R\">Rain.gif</a><br><br>");
-            client.print("<a href=\"/M\">Memories.gif</a><br>");
-
-            // The HTTP response ends with another blank line:
-            client.println();
-            // break out of the while loop:
-            break;
-          }
-          else
-          { // if you got a newline, then clear currentLine:
-            currentLine = "";
-          }
-        }
-        else if (c != '\r')
-        {                   // if you got anything else but a carriage return character,
-          currentLine += c; // add it to the end of the currentLine
-        }
-        // Check to see if the client request was "GET /H" or "GET /L":
-        if (currentLine.endsWith("GET /R"))
-        {
-          drawGifFromSD(gfx, gifClass, GIF_RAIN);
-        }
-        if (currentLine.endsWith("GET /M"))
-        {
-          drawGifFromSD(gfx, gifClass, GIF_MEMORIES);
-        }
-      }
-    }
-    // close the connection:
-    client.stop();
-    Serial.println("Client Disconnected.");
-  }
   // if (imageCount > 0)
   // {
   //   unsigned long currentTime = millis();
