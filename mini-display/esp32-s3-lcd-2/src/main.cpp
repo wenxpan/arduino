@@ -109,11 +109,12 @@ void setup(void)
   USBSerial.begin(115200);
   WiFi.softAP(ESP_SSID, ESP_PASS);
   IPAddress myIP = WiFi.softAPIP();
-  USBSerial.println("");
+  USBSerial.println("IP: ");
+  USBSerial.println(myIP);
 
   if (MDNS.begin("esp32"))
   {
-    Serial.println("MDNS responder started");
+    USBSerial.println("MDNS responder started");
   }
 
   server.on("/", handleRoot);
@@ -132,7 +133,7 @@ void setup(void)
   server.onNotFound(handleNotFound);
 
   server.begin();
-  Serial.println("HTTP server started");
+  USBSerial.println("HTTP server started");
 
   // Init Display
   gfx = setupGfx();
