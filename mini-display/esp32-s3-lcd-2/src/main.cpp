@@ -24,7 +24,7 @@ Arduino_GFX *gfx = nullptr;
 
 static GifClass gifClass;
 
-// rotate files config
+// Rotate files config (unchanged)
 File root;
 String imageFiles[50]; // Array to hold image filenames
 int imageCount = 0;
@@ -32,7 +32,7 @@ int currentImage = 0;
 unsigned long lastChangeTime = 0;
 const unsigned long rotationInterval = 5000; // 5 seconds
 
-// Time configuration
+// Time configuration (unchanged)
 const char *ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 60 * 60 * 10;
 const int daylightOffset_sec = 0;
@@ -40,13 +40,69 @@ const int daylightOffset_sec = 0;
 #define GIF_RAIN "/rain.gif"
 #define GIF_MEMORIES "/memories.gif"
 
+String getContentType(String filename)
+{
+  if (filename.endsWith(".html"))
+    return "text/html";
+  if (filename.endsWith(".htm"))
+    return "text/html";
+  if (filename.endsWith(".js"))
+    return "application/javascript";
+  if (filename.endsWith(".css"))
+    return "text/css";
+  if (filename.endsWith(".json"))
+    return "application/json";
+  if (filename.endsWith(".png"))
+    return "image/png";
+  if (filename.endsWith(".jpg"))
+    return "image/jpeg";
+  if (filename.endsWith(".jpeg"))
+    return "image/jpeg";
+  if (filename.endsWith(".gif"))
+    return "image/gif";
+  if (filename.endsWith(".svg"))
+    return "image/svg+xml";
+  if (filename.endsWith(".ico"))
+    return "image/x-icon";
+  // Add more as needed
+  return "application/octet-stream"; // Default for unknown types
+}
+
 void handleRoot()
 {
-  server.send(200, "text/plain", "hello from esp32!");
+  String path = "/www" + server.uri(); // Assuming your files are in /www on SD card
+  if (path.endsWith("/"))
+    path += "index.html"; // Handle directories by defaulting to index.html
+
+  if (SD.exists(path))
+  {
+    File file = SD.open(path, FILE_READ);
+    if (file)
+    {
+      String contentType = getContentType(path);
+      server.streamFile(file, contentType);
+      file.close();
+      return; // File served successfully
+    }
+  }
+
+  // If the file doesn't exist, serve index.html for SPA routing
+  String indexPath = "/www/index.html";
+  if (SD.exists(indexPath))
+  {
+    File file = SD.open(indexPath, FILE_READ);
+    if (file)
+    {
+      server.streamFile(file, "text/html");
+      file.close();
+      return; // Serve index.html
+    }
+  }
 }
 
 void handleNotFound()
 {
+  // If nothing is found, send a real 404
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -62,44 +118,11 @@ void handleNotFound()
   server.send(404, "text/plain", message);
 }
 
-// pixel drawing callback
+// pixel drawing callback (unchanged)
 static int jpegDrawCallback(JPEGDRAW *pDraw)
 {
-  // USBSerial.printf("Draw pos = %d,%d. size = %d x %d\n", pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
   gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
   return 1;
-}
-void loadImageList()
-{
-  root = SD.open("/");
-  File file = root.openNextFile();
-  imageCount = 0;
-
-  while (file && imageCount < 50)
-  {
-    if (!file.isDirectory())
-    {
-      String filename = file.name();
-      // Filter hidden files
-      // if ((filename.endsWith(".jpg") || filename.endsWith(".jpeg")) &&
-      if (filename.endsWith(".gif") &&
-          !filename.startsWith("._") &&
-          !filename.startsWith("."))
-      {
-        // Store with full path
-        imageFiles[imageCount] = "/" + filename;
-        USBSerial.println("Found valid image: " + imageFiles[imageCount]);
-        imageCount++;
-      }
-      else
-      {
-        USBSerial.println("Skipping: " + filename);
-      }
-    }
-    file = root.openNextFile();
-  }
-
-  USBSerial.printf("Found %d valid images\n", imageCount);
 }
 
 void setup(void)
@@ -118,79 +141,24 @@ void setup(void)
   }
 
   server.on("/", handleRoot);
-
   server.on("/rain", []()
-            { drawGifFromSD(gfx, gifClass, GIF_RAIN);
-            server.send(200, "text/plain", "rain.gif"); });
+            { drawGifFromSD(gfx, gifClass, GIF_RAIN); });
 
   server.on("/memories", []()
-            { drawGifFromSD(gfx, gifClass, GIF_MEMORIES);
-            server.send(200, "text/plain", "memories.gif"); });
-
-  server.on("/inline", []()
-            { server.send(200, "text/plain", "this works as well"); });
+            { drawGifFromSD(gfx, gifClass, GIF_MEMORIES); });
 
   server.onNotFound(handleNotFound);
 
   server.begin();
   USBSerial.println("HTTP server started");
 
-  // Init Display
   gfx = setupGfx();
-
-  // drawExamplePepper(gfx);
   setupSD();
   logSDInfo();
-
-  // configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  // // WiFi.begin(WIFI_SSID, WIFI_PASS);
-  // // while (WiFi.status() != WL_CONNECTED)
-  // // {
-  // //   delay(500);
-  // //   USBSerial.print(".");
-  // // }
-
-  // // Load list of JPEG images
-  // loadImageList();
-
-  // // Display first image if available
-  // if (imageCount > 0)
-  // {
-  //   // drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
-  //   drawGifFromSD(gfx, gifClass, imageFiles[currentImage].c_str());
-  //   lastChangeTime = millis();
-  // }
-  // else
-  // {
-  //   USBSerial.println("No JPEG images found!");
-  // }
 }
 
 void loop()
 {
   server.handleClient();
-  delay(2); // allow the cpu to switch to other tasks
-
-  // if (imageCount > 0)
-  // {
-  //   unsigned long currentTime = millis();
-
-  //   // Check if it's time to change image
-  //   if (currentTime - lastChangeTime >= rotationInterval)
-  //   {
-  //     lastChangeTime = currentTime;
-
-  //     // Move to next image
-  //     currentImage = (currentImage + 1) % imageCount;
-
-  //     // Display the image
-  //     USBSerial.println("Displaying: " + imageFiles[currentImage]);
-  //     // drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
-  //     drawGifFromSD(gfx, gifClass, imageFiles[currentImage].c_str());
-  //   }
-  // }
-
-  // delay(1 * 1000);
-
-  // drawGifFromSD(gfx, gifClass, GIF_FILENAME);
+  delay(2); // Allow CPU to switch tasks
 }
