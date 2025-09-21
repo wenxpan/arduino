@@ -1,164 +1,160 @@
+/*Using LVGL with Arduino requires some extra steps:
+ *Be sure to read the docs here: https://docs.lvgl.io/master/get-started/platforms/arduino.html  */
+
 #include <Arduino.h>
+#include <lvgl.h>
 #include <Arduino_GFX_Library.h>
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <WebServer.h>
-#include <JPEGDEC.h>
-#include <SD.h>
-#include <SD_MMC.h>
-#include <ESPmDNS.h>
+/*To use the built-in examples and demos of LVGL uncomment the includes below respectively.
+ *You also need to copy `lvgl/examples` to `lvgl/src/examples`. Similarly for the demos `lvgl/demos` to `lvgl/src/demos`.
+ Note that the `lv_examples` library is for LVGL v7 and you shouldn't install it for this version (since LVGL v8)
+ as the examples and demos are now part of the main LVGL library. */
 
-#include "time.h"
-#include "./secrets.h"
-#include "./display/gfx_setup.h"
-#include "./display/draw_utils.h"
-#include "./storage/sd_utils.h"
-#include "./display/JpegFunc.h"
-#include "./display/GifClass.h"
+// #include <examples/lv_examples.h>
+#include <demos/lv_demos.h>
+#include "lv_conf.h"
 
-WebServer server(80);
+#define LV_CONF_INCLUDE_SIMPLE 1
+#define EXAMPLE_PIN_NUM_LCD_SCLK 39
+#define EXAMPLE_PIN_NUM_LCD_MOSI 38
+#define EXAMPLE_PIN_NUM_LCD_MISO 40
+#define EXAMPLE_PIN_NUM_LCD_DC 42
+#define EXAMPLE_PIN_NUM_LCD_RST -1
+#define EXAMPLE_PIN_NUM_LCD_CS 45
+#define EXAMPLE_PIN_NUM_LCD_BL 1
+#define EXAMPLE_PIN_NUM_TP_SDA 48
+#define EXAMPLE_PIN_NUM_TP_SCL 47
 
-const int led = 13;
+#define LEDC_FREQ 5000
+#define LEDC_TIMER_10_BIT 10
 
-Arduino_GFX *gfx = nullptr;
+#define EXAMPLE_LCD_ROTATION 0
+#define EXAMPLE_LCD_H_RES 240
+#define EXAMPLE_LCD_V_RES 320
 
-static GifClass gifClass;
+/* More data bus class: https://github.com/moononournation/Arduino_GFX/wiki/Data-Bus-Class */
+Arduino_DataBus *bus = new Arduino_ESP32SPI(
+    EXAMPLE_PIN_NUM_LCD_DC /* DC */, EXAMPLE_PIN_NUM_LCD_CS /* CS */,
+    EXAMPLE_PIN_NUM_LCD_SCLK /* SCK */, EXAMPLE_PIN_NUM_LCD_MOSI /* MOSI */, EXAMPLE_PIN_NUM_LCD_MISO /* MISO */);
 
-// Rotate files config (unchanged)
-File root;
-String imageFiles[50]; // Array to hold image filenames
-int imageCount = 0;
-int currentImage = 0;
-unsigned long lastChangeTime = 0;
-const unsigned long rotationInterval = 5000; // 5 seconds
+/* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
+Arduino_GFX *gfx = new Arduino_ST7789(
+    bus, EXAMPLE_PIN_NUM_LCD_RST /* RST */, EXAMPLE_LCD_ROTATION /* rotation */, true /* IPS */,
+    EXAMPLE_LCD_H_RES /* width */, EXAMPLE_LCD_V_RES /* height */);
 
-// Time configuration (unchanged)
-const char *ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 60 * 60 * 10;
-const int daylightOffset_sec = 0;
+/*******************************************************************************
+ * End of Arduino_GFX setting
+ ******************************************************************************/
 
-#define GIF_RAIN "/rain.gif"
-#define GIF_MEMORIES "/memories.gif"
+uint32_t screenWidth;
+uint32_t screenHeight;
+uint32_t bufSize;
+lv_disp_draw_buf_t draw_buf;
+lv_color_t *disp_draw_buf;
+lv_disp_drv_t disp_drv;
 
-String getContentType(String filename)
+#if LV_USE_LOG != 0
+/* Serial debugging */
+void my_print(const char *buf)
 {
-  if (filename.endsWith(".html"))
-    return "text/html";
-  if (filename.endsWith(".htm"))
-    return "text/html";
-  if (filename.endsWith(".js"))
-    return "application/javascript";
-  if (filename.endsWith(".css"))
-    return "text/css";
-  if (filename.endsWith(".json"))
-    return "application/json";
-  if (filename.endsWith(".png"))
-    return "image/png";
-  if (filename.endsWith(".jpg"))
-    return "image/jpeg";
-  if (filename.endsWith(".jpeg"))
-    return "image/jpeg";
-  if (filename.endsWith(".gif"))
-    return "image/gif";
-  if (filename.endsWith(".svg"))
-    return "image/svg+xml";
-  if (filename.endsWith(".ico"))
-    return "image/x-icon";
-  // Add more as needed
-  return "application/octet-stream"; // Default for unknown types
+  USBSerial.printf(buf);
+  USBSerial.flush();
 }
+#endif
 
-void handleRoot()
+/* Display flushing */
+void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p)
 {
-  String path = "/www" + server.uri(); // Assuming your files are in /www on SD card
-  if (path.endsWith("/"))
-    path += "index.html"; // Handle directories by defaulting to index.html
-
-  if (SD.exists(path))
-  {
-    File file = SD.open(path, FILE_READ);
-    if (file)
-    {
-      String contentType = getContentType(path);
-      server.streamFile(file, contentType);
-      file.close();
-      return; // File served successfully
-    }
-  }
-
-  // If the file doesn't exist, serve index.html for SPA routing
-  String indexPath = "/www/index.html";
-  if (SD.exists(indexPath))
-  {
-    File file = SD.open(indexPath, FILE_READ);
-    if (file)
-    {
-      server.streamFile(file, "text/html");
-      file.close();
-      return; // Serve index.html
-    }
-  }
-}
-
-void handleNotFound()
-{
-  // If nothing is found, send a real 404
-  String message = "File Not Found\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
-  for (uint8_t i = 0; i < server.args(); i++)
-  {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-  }
-  server.send(404, "text/plain", message);
-}
-
-// pixel drawing callback (unchanged)
-static int jpegDrawCallback(JPEGDRAW *pDraw)
-{
-  gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
-  return 1;
+  lv_disp_flush_ready(disp_drv);
 }
 
 void setup(void)
 {
-  pinMode(led, OUTPUT);
-  digitalWrite(led, 0);
   USBSerial.begin(115200);
-  WiFi.softAP(ESP_SSID, ESP_PASS);
-  IPAddress myIP = WiFi.softAPIP();
-  USBSerial.println("IP: ");
-  USBSerial.println(myIP);
 
-  if (MDNS.begin("esp32"))
+  // USBSerial.setDebugOutput(true);
+  // while(!Serial);
+  USBSerial.println("Arduino_GFX LVGL_Arduino_v8 example ");
+  String LVGL_Arduino = String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
+  USBSerial.println(LVGL_Arduino);
+
+#ifdef GFX_EXTRA_PRE_INIT
+  GFX_EXTRA_PRE_INIT();
+#endif
+
+  // Init Display
+  if (!gfx->begin())
   {
-    USBSerial.println("MDNS responder started");
+    USBSerial.println("gfx->begin() failed!");
+  }
+  gfx->fillScreen(BLUE);
+
+#ifdef EXAMPLE_PIN_NUM_LCD_BL
+  pinMode(EXAMPLE_PIN_NUM_LCD_BL, OUTPUT);
+  digitalWrite(EXAMPLE_PIN_NUM_LCD_BL, HIGH);
+#endif
+
+  gfx->setCursor(10, 10);
+  gfx->setTextColor(RED);
+  gfx->println("Hello World!");
+
+  delay(5000);
+
+  Wire.begin(EXAMPLE_PIN_NUM_TP_SDA, EXAMPLE_PIN_NUM_TP_SCL);
+  lv_init();
+
+#if LV_USE_LOG != 0
+  lv_log_register_print_cb(my_print); /* register print function for debugging */
+#endif
+
+  screenWidth = gfx->width();
+  screenHeight = gfx->height();
+
+  bufSize = screenWidth * screenHeight;
+
+  disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  if (!disp_draw_buf)
+  {
+    // remove MALLOC_CAP_INTERNAL flag try again
+    disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_8BIT);
   }
 
-  server.on("/", handleRoot);
-  server.on("/rain", []()
-            { drawGifFromSD(gfx, gifClass, GIF_RAIN); });
+  if (!disp_draw_buf)
+  {
+    USBSerial.println("LVGL disp_draw_buf allocate failed!");
+  }
+  else
+  {
+    lv_disp_draw_buf_init(&draw_buf, disp_draw_buf, NULL, bufSize);
 
-  server.on("/memories", []()
-            { drawGifFromSD(gfx, gifClass, GIF_MEMORIES); });
+    /* Initialize the display */
+    lv_disp_drv_init(&disp_drv);
+    /* Change the following line to your display resolution */
+    disp_drv.hor_res = screenWidth;
+    disp_drv.ver_res = screenHeight;
+    disp_drv.flush_cb = my_disp_flush;
+    disp_drv.draw_buf = &draw_buf;
+    disp_drv.direct_mode = true;
 
-  server.onNotFound(handleNotFound);
+    lv_disp_drv_register(&disp_drv);
 
-  server.begin();
-  USBSerial.println("HTTP server started");
+    /* Option 3: Or try out a demo. Don't forget to enable the demos in lv_conf.h. E.g. LV_USE_DEMOS_WIDGETS*/
+    lv_demo_widgets();
+    // lv_demo_benchmark();
+    // lv_demo_keypad_encoder();
+    // lv_demo_music();
+    // lv_demo_stress();
+  }
 
-  gfx = setupGfx();
-  setupSD();
-  logSDInfo();
+  USBSerial.println("Setup done");
 }
 
 void loop()
 {
-  server.handleClient();
-  delay(2); // Allow CPU to switch tasks
+  lv_timer_handler(); /* let the GUI do its work */
+#if (LV_COLOR_16_SWAP != 0)
+  gfx->draw16bitBeRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);
+#else
+  gfx->draw16bitRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);
+#endif
+  delay(5);
 }
