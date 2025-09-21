@@ -12,39 +12,9 @@
 // #include <examples/lv_examples.h>
 #include <demos/lv_demos.h>
 #include "lv_conf.h"
+#include "./display/gfx_setup.h"
 
-#define LV_CONF_INCLUDE_SIMPLE 1
-#define EXAMPLE_PIN_NUM_LCD_SCLK 39
-#define EXAMPLE_PIN_NUM_LCD_MOSI 38
-#define EXAMPLE_PIN_NUM_LCD_MISO 40
-#define EXAMPLE_PIN_NUM_LCD_DC 42
-#define EXAMPLE_PIN_NUM_LCD_RST -1
-#define EXAMPLE_PIN_NUM_LCD_CS 45
-#define EXAMPLE_PIN_NUM_LCD_BL 1
-#define EXAMPLE_PIN_NUM_TP_SDA 48
-#define EXAMPLE_PIN_NUM_TP_SCL 47
-
-#define LEDC_FREQ 5000
-#define LEDC_TIMER_10_BIT 10
-
-#define EXAMPLE_LCD_ROTATION 0
-#define EXAMPLE_LCD_H_RES 240
-#define EXAMPLE_LCD_V_RES 320
-
-/* More data bus class: https://github.com/moononournation/Arduino_GFX/wiki/Data-Bus-Class */
-Arduino_DataBus *bus = new Arduino_ESP32SPI(
-    EXAMPLE_PIN_NUM_LCD_DC /* DC */, EXAMPLE_PIN_NUM_LCD_CS /* CS */,
-    EXAMPLE_PIN_NUM_LCD_SCLK /* SCK */, EXAMPLE_PIN_NUM_LCD_MOSI /* MOSI */, EXAMPLE_PIN_NUM_LCD_MISO /* MISO */);
-
-/* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
-Arduino_GFX *gfx = new Arduino_ST7789(
-    bus, EXAMPLE_PIN_NUM_LCD_RST /* RST */, EXAMPLE_LCD_ROTATION /* rotation */, true /* IPS */,
-    EXAMPLE_LCD_H_RES /* width */, EXAMPLE_LCD_V_RES /* height */);
-
-/*******************************************************************************
- * End of Arduino_GFX setting
- ******************************************************************************/
-
+Arduino_GFX *gfx = nullptr;
 uint32_t screenWidth;
 uint32_t screenHeight;
 uint32_t bufSize;
@@ -71,36 +41,12 @@ void setup(void)
 {
   USBSerial.begin(115200);
 
-  // USBSerial.setDebugOutput(true);
-  // while(!Serial);
-  USBSerial.println("Arduino_GFX LVGL_Arduino_v8 example ");
+  USBSerial.setDebugOutput(true);
+  USBSerial.println("Arduino_GFX LVGL_Arduino_v8");
   String LVGL_Arduino = String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
   USBSerial.println(LVGL_Arduino);
 
-#ifdef GFX_EXTRA_PRE_INIT
-  GFX_EXTRA_PRE_INIT();
-#endif
-
-  // Init Display
-  if (!gfx->begin())
-  {
-    USBSerial.println("gfx->begin() failed!");
-  }
-  gfx->fillScreen(BLUE);
-
-#ifdef EXAMPLE_PIN_NUM_LCD_BL
-  pinMode(EXAMPLE_PIN_NUM_LCD_BL, OUTPUT);
-  digitalWrite(EXAMPLE_PIN_NUM_LCD_BL, HIGH);
-#endif
-
-  gfx->setCursor(10, 10);
-  gfx->setTextColor(RED);
-  gfx->println("Hello World!");
-
-  delay(5000);
-
-  Wire.begin(EXAMPLE_PIN_NUM_TP_SDA, EXAMPLE_PIN_NUM_TP_SCL);
-  lv_init();
+  gfx = setupGfx();
 
 #if LV_USE_LOG != 0
   lv_log_register_print_cb(my_print); /* register print function for debugging */

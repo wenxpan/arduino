@@ -1,3 +1,4 @@
+#include <lvgl.h>
 #include "gfx_setup.h"
 #include "../config/config.h"
 
@@ -26,6 +27,10 @@ Arduino_GFX *setupGfx()
   pinMode(PIN_NUM_LCD_BL, OUTPUT);
   digitalWrite(PIN_NUM_LCD_BL, HIGH);
 #endif
+
+  // setup lvgl too
+  Wire.begin(PIN_NUM_TP_SDA, PIN_NUM_TP_SCL);
+  lv_init();
 
   return gfx;
 }

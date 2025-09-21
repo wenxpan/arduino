@@ -8,6 +8,9 @@
 #define PIN_NUM_LCD_CS 45
 #define PIN_NUM_LCD_BL 1
 
+#define PIN_NUM_TP_SDA 48
+#define PIN_NUM_TP_SCL 47
+
 #define LCD_ROTATION 3
 #define LCD_H_RES 240
 #define LCD_V_RES 320
