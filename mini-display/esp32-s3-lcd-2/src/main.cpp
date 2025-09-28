@@ -141,48 +141,10 @@ void setup(void)
 
   setupSD();
   logSDInfo();
-
-  // // Load list of JPEG images
-  // loadImageList();
-
-  // // Display first image if available
-  // if (imageCount > 0)
-  // {
-  //   // drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
-  //   drawGifFromSD(gfx, gifClass, imageFiles[currentImage].c_str());
-  //   lastChangeTime = millis();
-  // }
-  // else
-  // {
-  //   USBSerial.println("No JPEG images found!");
-  // }
 }
 
 void loop()
 {
   server.handleClient();
-  delay(2); // allow the cpu to switch to other tasks
-
-  // if (imageCount > 0)
-  // {
-  //   unsigned long currentTime = millis();
-
-  //   // Check if it's time to change image
-  //   if (currentTime - lastChangeTime >= rotationInterval)
-  //   {
-  //     lastChangeTime = currentTime;
-
-  //     // Move to next image
-  //     currentImage = (currentImage + 1) % imageCount;
-
-  //     // Display the image
-  //     USBSerial.println("Displaying: " + imageFiles[currentImage]);
-  //     // drawJpegFromSD(gfx, imageFiles[currentImage].c_str(), jpegDrawCallback);
-  //     drawGifFromSD(gfx, gifClass, imageFiles[currentImage].c_str());
-  //   }
-  // }
-
-  // delay(1 * 1000);
-
-  // drawGifFromSD(gfx, gifClass, GIF_FILENAME);
+  delay(2);
 }

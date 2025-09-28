@@ -33,6 +33,7 @@ void setup()
   Serial.println("\nConnected to WiFi");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+  digitalWrite(LED_PIN, HIGH);
 }
 
 void sendRequest(const char *path)
@@ -67,15 +68,13 @@ void loop()
   if (button.isPressed() && !requestInProgress)
   {
     Serial.println("The button is pressed");
-    led_state = !led_state;
-    Serial.println(led_state);
-    digitalWrite(LED_PIN, led_state);
 
     shouldSendRequest = true;
   }
 
   if (shouldSendRequest && !requestInProgress)
   {
+    digitalWrite(LED_PIN, LOW);
     if (sendRain)
     {
       Serial.println("Send rain request");
@@ -90,6 +89,7 @@ void loop()
     shouldSendRequest = false;
     requestInProgress = true;
     requestStartTime = millis();
+    digitalWrite(LED_PIN, HIGH);
   }
 
   if (requestInProgress && (millis() - requestStartTime > 1000))
