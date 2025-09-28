@@ -166,15 +166,13 @@ void loop()
   if (button1.isPressed())
   {
     Serial.println("The button1 is pressed");
-    Serial.println("Send rain request");
-    sendAsyncRequest("/rain");
+    sendAsyncRequest("/prev");
   }
 
   if (button2.isPressed())
   {
     Serial.println("The button2 is pressed");
-    Serial.println("Send memories request");
-    sendAsyncRequest("/memories");
+    sendAsyncRequest("/next");
   }
 
   if (requestPending)
