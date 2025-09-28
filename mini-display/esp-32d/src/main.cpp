@@ -1,41 +1,99 @@
 #include <Arduino.h>
 #include <ezButton.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include "./secrets.h"
 
-/*
- * This ESP32 code is created by esp32io.com
- *
- * This ESP32 code is released in the public domain
- *
- * For more detail (instruction and wiring diagram), visit https://esp32io.com/tutorials/esp32-button-toggle-led
- */
+#define BUTTON_PIN 18
+#define LED_PIN 21
 
-#define BUTTON_PIN 18 // ESP32 pin GPIO18, which connected to button
-#define LED_PIN 21    // ESP32 pin GPIO21, which connected to led
+ezButton button(BUTTON_PIN);
 
-ezButton button(BUTTON_PIN); // create ezButton object that attach to pin 7;
-
-// variables will change:
-int led_state = LOW; // the current state of LED
+int led_state = LOW;
+bool shouldSendRequest = false;
+unsigned long requestStartTime = 0;
+bool requestInProgress = false;
+static bool sendRain = true;
 
 void setup()
 {
-  Serial.begin(9600);         // initialize serial
-  pinMode(LED_PIN, OUTPUT);   // set ESP32 pin to output mode
-  button.setDebounceTime(50); // set debounce time to 50 milliseconds
+  Serial.begin(9600);
+  pinMode(LED_PIN, OUTPUT);
+  button.setDebounceTime(50);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ESP_SSID, ESP_PASS);
+
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected to WiFi");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void sendRequest(const char *path)
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    HTTPClient http;
+    String url = String("http://192.168.4.1") + path;
+    http.begin(url);
+    int httpCode = http.GET();
+    if (httpCode > 0)
+    {
+      Serial.printf("GET %s response: %d\n", path, httpCode);
+      String payload = http.getString();
+      Serial.println(payload);
+    }
+    else
+    {
+      Serial.printf("GET %s failed, error: %s\n", path, http.errorToString(httpCode).c_str());
+    }
+    http.end();
+  }
+  else
+  {
+    Serial.println("WiFi not connected");
+  }
 }
 
 void loop()
 {
-  button.loop(); // MUST call the loop() function first
-
-  if (button.isPressed())
+  button.loop();
+  if (button.isPressed() && !requestInProgress)
   {
     Serial.println("The button is pressed");
-
-    // toggle state of LED
     led_state = !led_state;
-
-    // control LED arccoding to the toggleed sate
+    Serial.println(led_state);
     digitalWrite(LED_PIN, led_state);
+
+    shouldSendRequest = true;
+  }
+
+  if (shouldSendRequest && !requestInProgress)
+  {
+    if (sendRain)
+    {
+      Serial.println("Send rain request");
+      sendRequest("/rain");
+    }
+    else
+    {
+      Serial.println("Send memories request");
+      sendRequest("/memories");
+    }
+    sendRain = !sendRain;
+    shouldSendRequest = false;
+    requestInProgress = true;
+    requestStartTime = millis();
+  }
+
+  if (requestInProgress && (millis() - requestStartTime > 1000))
+  {
+    requestInProgress = false;
   }
 }
