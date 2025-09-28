@@ -1,18 +1,17 @@
 /*Using LVGL with Arduino requires some extra steps:
  *Be sure to read the docs here: https://docs.lvgl.io/master/get-started/platforms/arduino.html  */
 
-#include <Arduino.h>
-#include <lvgl.h>
-#include <Arduino_GFX_Library.h>
-/*To use the built-in examples and demos of LVGL uncomment the includes below respectively.
- *You also need to copy `lvgl/examples` to `lvgl/src/examples`. Similarly for the demos `lvgl/demos` to `lvgl/src/demos`.
- Note that the `lv_examples` library is for LVGL v7 and you shouldn't install it for this version (since LVGL v8)
- as the examples and demos are now part of the main LVGL library. */
-
-// #include <examples/lv_examples.h>
-#include <demos/lv_demos.h>
+#define LV_CONF_INCLUDE_SIMPLE
 #include "lv_conf.h"
+
+#include <Arduino.h>
+#include <Arduino_GFX_Library.h>
 #include "./display/gfx_setup.h"
+#include <lvgl.h>
+/*To use the built-in examples and demos of LVGL uncomment the includes below respectively.
+ *You also need to copy `lvgl/examples` to `lvgl/src/examples`. Similarly for the demos `lvgl/demos` to `lvgl/src/demos`.*/
+#include <demos/lv_demos.h>
+#include <examples/lv_examples.h>
 
 Arduino_GFX *gfx = nullptr;
 uint32_t screenWidth;
@@ -84,9 +83,11 @@ void setup(void)
     lv_disp_drv_register(&disp_drv);
 
     /* Option 3: Or try out a demo. Don't forget to enable the demos in lv_conf.h. E.g. LV_USE_DEMOS_WIDGETS*/
-    lv_demo_widgets();
+    // lv_example_switch_1();
+    // lv_example_animimg_1();
+    // lv_demo_widgets();
+    lv_demo_keypad_encoder();
     // lv_demo_benchmark();
-    // lv_demo_keypad_encoder();
     // lv_demo_music();
     // lv_demo_stress();
   }
