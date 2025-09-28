@@ -163,17 +163,26 @@ void loop()
   button1.loop();
   button2.loop();
 
-  if (button1.isPressed() && !requestPending)
+  if (button1.isPressed())
   {
     Serial.println("The button1 is pressed");
     Serial.println("Send rain request");
     sendAsyncRequest("/rain");
   }
 
-  if (button2.isPressed() && !requestPending)
+  if (button2.isPressed())
   {
     Serial.println("The button2 is pressed");
     Serial.println("Send memories request");
     sendAsyncRequest("/memories");
+  }
+
+  if (requestPending)
+  {
+    digitalWrite(LED_PIN, LOW);
+  }
+  else
+  {
+    digitalWrite(LED_PIN, HIGH);
   }
 }
