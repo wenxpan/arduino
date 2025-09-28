@@ -124,11 +124,11 @@ void sendAsyncRequest(const char *path)
     return;
   }
 
-  if (requestPending)
-  {
-    Serial.println("Request already in progress");
-    return;
-  }
+  // if (requestPending)
+  // {
+  //   Serial.println("Request already in progress");
+  //   return;
+  // }
 
   client = new AsyncClient();
   if (!client)
